@@ -3,6 +3,7 @@ import { Router } from "express";
 import multer from "multer";
 import rateLimit from "express-rate-limit";
 import { processImport } from "../services/import.service";
+import { getCache, setCache, hashContent } from "../cache/cache";
 
 const router = Router();
 
@@ -71,19 +72,27 @@ router.post("/import", limiter, upload.array("files", MAX_FILES), async (req, re
   const rejected: { filename: string; reason: string }[] = [];
 
   for (const file of files) {
-    if (file.size > MAX_FILE_SIZE) {
-      rejected.push({ filename: file.originalname, reason: `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit` });
-      continue;
-    }
-
     const csvText = file.buffer.toString("utf-8");
     if (!csvText.trim()) {
       rejected.push({ filename: file.originalname, reason: "Empty file" });
       continue;
     }
 
+    if (file.size > MAX_FILE_SIZE) {
+      rejected.push({ filename: file.originalname, reason: `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit` });
+      continue;
+    }
+
+    const cacheKey = hashContent(csvText);
+    const cached = getCache(cacheKey);
+    if (cached) {
+      results.push({ filename: file.originalname, ...(cached as object), fromCache: true });
+      continue;
+    }
+
     try {
       const result = processImport(csvText);
+      setCache(cacheKey, result);
       results.push({ filename: file.originalname, ...result });
     } catch (err: unknown) {
       rejected.push({ filename: file.originalname, reason: err instanceof Error ? err.message : "Unknown error" });
