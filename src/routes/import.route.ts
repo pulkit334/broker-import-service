@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Router } from "express";
 import multer from "multer";
 import rateLimit from "express-rate-limit";

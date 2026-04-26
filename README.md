@@ -15,6 +15,8 @@ A production-ready Node.js/TypeScript service that normalizes broker trade expor
 | Jest | 29.x | Testing framework |
 | ts-jest | 29.x | TypeScript support for Jest |
 | express-rate-limit | 6.x | Rate limiting |
+| BullMQ | 5.x | Job queue with retry |
+| dotenv | 16.x | Environment variables |
 
 ## Features
 
@@ -39,12 +41,36 @@ cd broker-import-service
 # Install dependencies
 npm install
 
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your Redis URL (optional - for queue processing)
+
 # Run development server
 npm run dev
 # Server running at http://localhost:3000
 
 # Run tests
 npm test
+```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `REDIS_URL` | Redis connection URL for BullMQ queue | `redis://localhost:6379` |
+| `USE_QUEUE` | Enable async queue processing | `false` |
+| `PORT` | Server port | `3000` |
+
+### Using Upstash Redis (Optional)
+
+1. Create a Redis database at https://upstash.io
+2. Copy the connection URL from the dashboard
+3. Update `.env` with your REDIS_URL
+4. Set `USE_QUEUE=true` to enable async processing
+
+```bash
+# With queue enabled
+USE_QUEUE=true npm run dev
 ```
 
 ## Project Structure

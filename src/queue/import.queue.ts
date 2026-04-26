@@ -1,12 +1,13 @@
 import { Queue, Worker } from "bullmq";
 import { processImport } from "../services/import.service";
+import "dotenv/config";
 
-const REDIS_URL = "redis://default:gQAAAAAAAaETAAIgcDI2OTljZDBiYTViM2U0Y2UyYjVhOTMzYmE2MGE2NDA3OA@thankful-antelope-106771.upstash.io:6379";
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
 export const importQueue = new Queue("csv-import", {
   connection: {
     url: REDIS_URL,
-    tls: {},
+    tls: REDIS_URL.includes("upstash") ? {} : undefined,
   },
 });
 
@@ -21,7 +22,7 @@ export function createImportWorker() {
     {
       connection: {
         url: REDIS_URL,
-        tls: {},
+        tls: REDIS_URL.includes("upstash") ? {} : undefined,
       },
     }
   );
