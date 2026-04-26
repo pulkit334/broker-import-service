@@ -1,10 +1,12 @@
 import { Queue, Worker } from "bullmq";
 import { processImport } from "../services/import.service";
 
+const REDIS_URL = "redis://default:gQAAAAAAAaETAAIgcDI2OTljZDBiYTViM2U0Y2UyYjVhOTMzYmE2MGE2NDA3OA@thankful-antelope-106771.upstash.io:6379";
+
 export const importQueue = new Queue("csv-import", {
   connection: {
-    host: "127.0.0.1",
-    port: 6379,
+    url: REDIS_URL,
+    tls: {},
   },
 });
 
@@ -18,8 +20,8 @@ export function createImportWorker() {
     },
     {
       connection: {
-        host: "127.0.0.1",
-        port: 6379,
+        url: REDIS_URL,
+        tls: {},
       },
     }
   );
