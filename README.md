@@ -14,12 +14,16 @@ A production-ready Node.js/TypeScript service that normalizes broker trade expor
 | Multer | 1.x | Multipart file uploads |
 | Jest | 29.x | Testing framework |
 | ts-jest | 29.x | TypeScript support for Jest |
+| express-rate-limit | 6.x | Rate limiting |
 
 ## Features
 
+- **Multi-file upload** — Upload up to 10 CSV files in a single request
 - **Multi-broker support** — Auto-detects and parses CSVs from Zerodha and Interactive Brokers
 - **Smart format detection** — Header fingerprinting identifies broker type automatically
 - **Robust error handling** — Row-level errors don't crash imports; invalid rows are skipped with clear reasons
+- **File size limit** — 25MB per file, oversized files are rejected gracefully
+- **Rate limiting** — 30 requests per minute to prevent abuse
 - **Schema validation** — Zod ensures data integrity before acceptance
 - **Extensible architecture** — Add new brokers without touching existing code
 - **Edge case handling** — BOM characters, CRLF line endings, whitespace in headers, mixed date formats
@@ -81,72 +85,97 @@ broker-import-service/
 
 ### POST /import
 
-Upload a CSV file for parsing and normalization.
+Upload CSV files for parsing and normalization. Supports multiple files up to 10 at a time.
 
 **Request**
 
 ```bash
 curl -X POST http://localhost:3000/import \
-  -F "file=@path/to/trades.csv"
+  -F "files=@path/to/trades1.csv" \
+  -F "files=@path/to/trades2.csv"
 ```
 
 **Content-Type:** `multipart/form-data`  
-**Field name:** `file`
+**Field name:** `files` (array)  
+**Max files:** 10  
+**Max file size:** 25MB per file
 
 **Response (Success)**
 
 ```json
 {
-  "broker": "zerodha",
-  "summary": {
-    "total": 7,
-    "valid": 5,
-    "skipped": 2
-  },
-  "trades": [
+  "totalFiles": 2,
+  "processed": 2,
+  "rejected": 0,
+  "results": [
     {
-      "symbol": "RELIANCE",
-      "side": "BUY",
-      "quantity": 10,
-      "price": 2450.50,
-      "totalAmount": 24505.00,
-      "currency": "INR",
-      "executedAt": "2026-04-01T00:00:00.000Z",
+      "filename": "zerodha.csv",
       "broker": "zerodha",
-      "rawData": {
-        "symbol": "RELIANCE",
-        "isin": "INE002A01018",
-        "trade_date": "01-04-2026",
-        "trade_type": "buy",
-        "quantity": "10",
-        "price": "2450.50"
-      }
+      "summary": { "total": 7, "valid": 5, "skipped": 2 },
+      "trades": [
+        {
+          "symbol": "RELIANCE",
+          "side": "BUY",
+          "quantity": 10,
+          "price": 2450.50,
+          "totalAmount": 24505.00,
+          "currency": "INR",
+          "executedAt": "2026-04-01T00:00:00.000Z",
+          "broker": "zerodha",
+          "rawData": {}
+        }
+      ],
+      "errors": [
+        { "row": 6, "reason": "Invalid date: 'invalid_date'" }
+      ]
     }
   ],
-  "errors": [
-    { "row": 6, "reason": "Invalid date: 'invalid_date'" },
-    { "row": 7, "reason": "Quantity must be positive, got -5" }
+  "rejectedFiles": []
+}
+```
+
+**Response with Rejected Files**
+
+```json
+{
+  "totalFiles": 3,
+  "processed": 2,
+  "rejected": 1,
+  "results": [
+    { "filename": "small.csv", "broker": "zerodha", "trades": [...], ... }
+  ],
+  "rejectedFiles": [
+    { "filename": "large.csv", "reason": "File size exceeds 25MB limit" }
   ]
 }
 ```
 
-**Response (Unrecognized Format)**
+**Response (No Files)**
 
 ```json
 HTTP 400
 {
-  "error": "Unrecognized broker format",
-  "detail": "Unrecognized broker format. Headers found: [col1, col2, col3]"
+  "error": "No files uploaded"
 }
 ```
 
-**Response (Empty File)**
+**Response (All Empty Files)**
 
 ```json
 HTTP 400
 {
   "error": "Empty file",
-  "detail": "The uploaded CSV has no content"
+  "detail": "All uploaded files are empty"
+}
+```
+
+**Response (Rate Limited)**
+
+```json
+HTTP 429
+{
+  "error": "Too many requests",
+  "detail": "Rate limit exceeded. Try again in a minute."
 }
 ```
 
@@ -171,7 +200,8 @@ Three levels of error handling:
 | Level | Error | Response |
 |-------|-------|----------|
 | **Request** | No file, empty file | HTTP 400 with message |
-| **Detection** | Unknown broker format | HTTP 400 with detected headers |
+| **File** | Size exceeds 25MB | File rejected, others processed |
+| **Detection** | Unknown broker format | File rejected, others processed |
 | **Row** | Invalid date, bad quantity, Zod failure | Logged to errors[], row skipped |
 
 Row-level errors never crash an import — valid trades are processed independently.
