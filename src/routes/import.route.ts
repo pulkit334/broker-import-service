@@ -3,7 +3,7 @@ import { Router } from "express";
 import multer from "multer";
 import rateLimit from "express-rate-limit";
 import { processImport } from "../services/import.service";
-import { getCache, setCache, hashContent } from "../cache/cache";
+import { getCache, setCache, hashContent, flushCache } from "../cache/cache";
 
 const router = Router();
 
@@ -100,6 +100,11 @@ router.post("/import", limiter, upload.array("files", MAX_FILES), async (req, re
   }
 
   res.json({ totalFiles: files.length, processed: results.length, rejected: rejected.length, results, rejectedFiles: rejected });
+});
+
+router.post("/cache/clear", (req, res) => {
+  flushCache();
+  res.json({ message: "Cache cleared" });
 });
 
 export default router;

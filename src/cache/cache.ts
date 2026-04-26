@@ -22,6 +22,10 @@ export function setCache(key: string, data: unknown) {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
+export function flushCache() {
+  cache.clear();
+}
+
 export function hashContent(content: string): string {
   return createHash("sha256").update(content).digest("hex").slice(0, 16);
 }

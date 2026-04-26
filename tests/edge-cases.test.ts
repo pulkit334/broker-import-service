@@ -1,7 +1,10 @@
 import request from "supertest";
 import app from "../src/app";
+import { flushCache } from "../src/cache/cache";
 
 describe("Import API Edge Cases", () => {
+  beforeEach(() => flushCache());
+
   it("returns 400 for empty file upload", async () => {
     const response = await request(app)
       .post("/import")
