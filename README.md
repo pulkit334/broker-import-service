@@ -28,7 +28,7 @@ A production-ready Node.js/TypeScript service that normalizes broker trade expor
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/pulkit334/broker-import-service.git
 cd broker-import-service
 
 # Install dependencies
