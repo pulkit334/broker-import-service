@@ -19,6 +19,7 @@ A production-ready Node.js/TypeScript service that normalizes broker trade expor
 ## Features
 
 - **Multi-file upload** — Upload up to 10 CSV files in a single request
+- **Smart broker detection** — Auto-detects broker with confidence score (e.g., 0.95)
 - **Multi-broker support** — Auto-detects and parses CSVs from Zerodha and Interactive Brokers
 - **Smart format detection** — Header fingerprinting identifies broker type automatically
 - **Robust error handling** — Row-level errors don't crash imports; invalid rows are skipped with clear reasons
@@ -111,6 +112,7 @@ curl -X POST http://localhost:3000/import \
     {
       "filename": "zerodha.csv",
       "broker": "zerodha",
+      "detectionConfidence": 1.0,
       "summary": { "total": 7, "valid": 5, "skipped": 2 },
       "trades": [
         {
