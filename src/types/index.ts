@@ -7,6 +7,7 @@ export interface RowError {
 
 export interface ImportResponse {
   broker: string;
+  detectionConfidence: number;
   summary: { total: number; valid: number; skipped: number };
   trades: Trade[];
   errors: RowError[];

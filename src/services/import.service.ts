@@ -4,7 +4,7 @@ import { BrokerFactory } from "../factory/broker.factory";
 import { Trade } from "../schemas/trade.schema";
 
 export function processImport(csvText: string): ImportResponse {
-  const { broker, parser } = BrokerFactory.getParser(csvText);
+  const { broker, parser, detectionConfidence } = BrokerFactory.getParser(csvText);
   const { rows, errors } = parser.parse(csvText);
 
   const trades: Trade[] = [];
@@ -21,6 +21,7 @@ export function processImport(csvText: string): ImportResponse {
 
   return {
     broker,
+    detectionConfidence,
     summary: {
       total: trades.length + allErrors.length,
       valid: trades.length,
